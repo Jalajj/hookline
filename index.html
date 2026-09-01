@@ -124,18 +124,18 @@
       return arr[Math.floor(Math.random() * arr.length)];
     }
 
-    function fill(tmpl) {
+    function fill(tmpl, p) {
       let s = tmpl;
-      s = s.replace(/\{Q\}/g, rand(words.Q));
-      s = s.replace(/\{q\}/g, rand(words.q));
-      s = s.replace(/\{problem\}/g, rand(words.problem));
-      s = s.replace(/\{alternative\}/g, rand(words.alternative));
-      s = s.replace(/\{situation\}/g, rand(words.situation));
-      s = s.replace(/\{mistake\}/g, rand(words.mistake));
-      s = s.replace(/\{quote\}/g, rand(words.quote));
-      s = s.replace(/\{outcome\}/g, rand(words.outcome));
-      s = s.replace(/\{pain\}/g, rand(words.pain));
-      s = s.replace(/\{result\}/g, rand(words.result));
+      s = s.replace(/\{Q\}/g, rand(p.Q));
+      s = s.replace(/\{q\}/g, rand(p.q));
+      s = s.replace(/\{problem\}/g, rand(p.problem));
+      s = s.replace(/\{alternative\}/g, rand(p.alternative));
+      s = s.replace(/\{situation\}/g, rand(p.situation));
+      s = s.replace(/\{mistake\}/g, rand(p.mistake));
+      s = s.replace(/\{quote\}/g, rand(p.quote));
+      s = s.replace(/\{outcome\}/g, rand(p.outcome));
+      s = s.replace(/\{pain\}/g, rand(p.pain));
+      s = s.replace(/\{result\}/g, rand(p.result));
       // Replace any remaining {word} with the placeholder name (fallback)
       s = s.replace(/\{(\w+)\}/g, (m, k) => "[" + k + "]");
       return s;
@@ -146,10 +146,11 @@
       const out = [];
       types.forEach(k => {
         const [t1, t2] = rand(templates[k]);
-        let line = fill(t1);
+        // If topic provided, use it as the {q} / {Q} word
+        const p = topic ? { ...words, q: [topic], Q: [topic.charAt(0).toUpperCase() + topic.slice(1)] } : words;
+        let line = fill(t1, p);
         let sub = null;
-        if (t2) sub = fill(t2);
-        if (topic) line = line.replace(/^([^.,!?]+)([.,!?])/, "<strong>" + escapeHtml(topic) + "</strong>$2");
+        if (t2) sub = fill(t2, p);
         out.push({ type: k, line, sub });
       });
       return out;
