@@ -4,7 +4,53 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Hookline — 5 scroll-stopping first lines for your LinkedIn post</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      --bg: #0a0a0f; --card: #1a1a24; --border: #2a2a3a; --text: #e8e8f0;
+      --muted: #8a8aa3; --accent: #6366f1; --accent2: #8b5cf6;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg); color: var(--text); min-height: 100vh;
+      display: flex; align-items: center; justify-content: center; padding: 2rem;
+    }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; max-width: 560px; width: 100%; }
+    h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: .25rem; }
+    .subtitle { color: var(--muted); font-size: .9rem; margin-bottom: 1.25rem; }
+    textarea {
+      width: 100%; background: #111; border: 1px solid var(--border); border-radius: 10px;
+      padding: .75rem; font-size: .95rem; resize: vertical; color: var(--text); outline: none;
+    }
+    textarea:focus { border-color: var(--accent); }
+    button#go {
+      width: 100%; margin-top: 1rem; padding: .8rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: 10px; font-weight: 600; cursor: pointer;
+      font-size: 1rem; transition: opacity .2s;
+    }
+    button#go:hover { opacity: .9; }
+    button#go:disabled { opacity: .6; cursor: not-allowed; }
+    .hook { background: #111; border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-top: 1rem; position: relative; }
+    .hook:last-child { margin-bottom: 2rem; }
+    .tag {
+      display: inline-block; font-size: .65rem; text-transform: uppercase; letter-spacing: .5px;
+      font-weight: 700; color: var(--accent); background: rgba(99,102,241,.15);
+      border: 1px solid rgba(99,102,241,.3); border-radius: 6px; padding: .15rem .5rem; margin-bottom: .5rem;
+    }
+    .line { font-size: 1rem; line-height: 1.5; }
+    .sub { color: var(--muted); font-size: .85rem; }
+    button.copy {
+      position: absolute; top: 1rem; right: 1rem; background: transparent;
+      border: 1px solid var(--border); border-radius: 6px; padding: .25rem .6rem;
+      font-size: .75rem; color: var(--muted); cursor: pointer; transition: all .2s;
+    }
+    button.copy:hover { background: var(--accent); color: #000; }
+    footer { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 1.5rem; }
+    footer a { color: var(--accent); }
+    .loading { text-align: center; color: var(--muted); padding: 1rem; font-size: .9rem; }
+    .error { color: #f87171; font-size: .85rem; margin-top: .5rem; }
+  </style>
 </head>
 <body>
   <main class="card">
@@ -14,98 +60,96 @@
     <textarea id="input" placeholder="e.g. I want to talk about why content calendars fail..." rows="4"></textarea>
 
     <button id="go">Generate hooks</button>
-
     <div id="output"></div>
   </main>
 
   <footer class="tiny">Built live in <strong>Day 1 of 7 tiny tools</strong>. Free, no signup. <a href="https://github.com/jalajjain/hookline">Source</a></footer>
 
   <script>
+    // --- Hook templates ---
+    // Each template: [primary hook, optional secondary/sub-line]
     const templates = {
       curiosity: [
         ["I was wrong about {q}.", "Turns out the opposite is true."],
         ["Most people {q} wrong. Here's how.", null],
         ["{Q} sounds simple until you {problem}.", null],
         ["The real reason {q} isn't what you think.", null],
+        ["{Q}? The honest answer is different.", null],
       ],
       contrarian: [
         ["Unpopular opinion: {q} is overrated.", null],
         ["Everyone says {q}. I disagree.", null],
         ["Stop {q}. Do this instead.", null],
         ["{Q}? Nah. Try {alternative}.", null],
+        ["{Q}: overrated advice.", null],
       ],
       story: [
         ["Last week, {situation} happened.", null],
         ["3 years ago I did {q}. Today {result}.", null],
         ["I almost {mistake}. Here's what saved me.", null],
         ["The client said {quote}. Then {outcome}.", null],
+        ["I tried {q} for 30 days. Here's what happened.", null],
       ],
       value: [
         ["{Q} in 3 steps:", null],
-        ["{Q}? (without {common_pain}):", null],
+        ["{Q}? (without {pain}):", null],
         ["{Q}, minus the fluff:", null],
         ["Here's how to {q} (it's simpler than you think):", null],
+        ["One {q} trick nobody talks about:", null],
       ],
       hot_take: [
         ["{Q} won't save you. {alternative} will.", null],
         ["If {q} is your strategy, you're already losing.", null],
         ["The {q} myth, busted.", null],
         ["{Q}: effective, but dangerous if you miss this.", null],
+        ["Your {q} is wrong. Here's why.", null],
       ],
     };
 
-    const placeholders = {
-      q: ["build a personal brand", "grow a newsletter", "price consulting", "hire an assistant", "launch a product", "write better tweets"],
-      Q: ["Building a personal brand", "Growing a newsletter", "Pricing consulting", "Hiring an assistant", "Launching a product", "Writing better tweets"],
-      problem: ["actually do the work", "ship it", "price it", "hire", "launch it", "write it"],
-      alternative: ["doing less", "a niche newsletter", "value-based pricing", "systems", "with 5 customers first", "long-form"],
-      situation: ["I accidentally went viral", "my post got deleted", "a client ghosted me", "I sent the wrong email", "my tool broke at launch"],
-      mistake: ["deleted my entire blog", "sent a cold email to my mom", "priced it too low", "hired the cheapest", "launched without customers"],
-      quote: ["'That's not how it works'", "'Just post every day'", "'Charge whatever you want'", "'Build it and they will come'"],
-      outcome: ["we lost 3 clients", "I apologized and she became a customer", "they asked for a raise instead", "she referred 5 friends"],
-      common_pain: ["busywork", "perfectionism", "analysis paralysis", "scope creep", "reinvention", "overthinking"),
+    // --- Placeholder word banks ---
+    const words = {
+      q: ["build a personal brand", "grow a newsletter", "price consulting", "hire an assistant", "launch a product", "write better tweets", "grow a LinkedIn audience", "write engaging posts", "stand out on LinkedIn"],
+      Q: ["Building a personal brand", "Growing a newsletter", "Pricing consulting", "Hiring an assistant", "Launching a product", "Writing better tweets", "Growing a LinkedIn audience", "Writing engaging posts", "Standing out on LinkedIn"],
+      problem: ["actually do the work", "ship it", "price it", "hire", "launch it", "write it", "post consistently", "hook readers", "get replies"],
+      alternative: ["doing less", "a niche newsletter", "value-based pricing", "systems", "with 5 customers first", "long-form", "posting daily", "starting with the ending"],
+      situation: ["I accidentally went viral", "my post got deleted", "a client ghosted me", "I sent the wrong email", "my tool broke at launch", "my post flopped", "the algo changed overnight"],
+      mistake: ["deleted my entire blog", "sent a cold email to my mom", "priced it too low", "hired the cheapest", "launched without customers", "posted without a hook"],
+      quote: ["'That's not how it works'", "'Just post every day'", "'Charge whatever you want'", "'Build it and they will come'", "'Hook, story, offer'", "'Be consistent'"],
+      outcome: ["we lost 3 clients", "I apologized and she became a customer", "they asked for a raise instead", "she referred 5 friends", "my engagement doubled", "I learned the hard way"],
+      pain: ["busywork", "perfectionism", "analysis paralysis", "scope creep", "reinvention", "overthinking", "writer's block", "imposter syndrome"],
+      result: ["I make 6 figures solo", "I have 10K followers", "clients pay upfront", "I post once a week"],
     };
 
-    // Fix trailing ) — typo above, patch in JS
-    delete placeholders.common_pain;
+    function rand(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
 
-    const fallback = {
-      q: ["grow a LinkedIn audience", "write engaging posts", "stand out on LinkedIn"],
-      Q: ["Growing a LinkedIn audience", "Writing engaging posts", "Standing out on LinkedIn"],
-      problem: ["post consistently", "hook readers", "get replies"],
-      alternative: ["posting daily", "starting with the ending", "asking questions"],
-      situation: ["my post flopped", "I forgot to post", "the algo changed overnight"],
-      mistake: ["posted without a hook", "scheduled 30 posts and ghosted", "chased virality"],
-      quote: ["'Post every day'", "'Hook, story, offer'", "'Be consistent'"],
-      outcome: ["crickets", "my engagement doubled", "I learned the hard way"],
-    };
-
-    function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-
-    function fill(tmpl, p) {
+    function fill(tmpl) {
       let s = tmpl;
-      s = s.replace(/\{Q\}/g, rand(p.Q || fallback.Q));
-      s = s.replace(/\{q\}/g, rand(p.q || fallback.q));
-      s = s.replace(/\{problem\}/g, rand(p.problem || fallback.problem));
-      s = s.replace(/\{alternative\}/g, rand(p.alternative || fallback.alternative));
-      s = s.replace(/\{situation\}/g, rand(p.situation || fallback.situation));
-      s = s.replace(/\{mistake\}/g, rand(p.mistake || fallback.mistake));
-      s = s.replace(/\{quote\}/g, rand(p.quote || fallback.quote));
-      s = s.replace(/\{outcome\}/g, rand(p.outcome || fallback.outcome));
-      s = s.replace(/\{common_pain\}/g, rand(p.common_pain || fallback.common_pain));
-      s = s.replace(/\{(\w+)\}/g, (_, k) => `{${k}}`);
+      s = s.replace(/\{Q\}/g, rand(words.Q));
+      s = s.replace(/\{q\}/g, rand(words.q));
+      s = s.replace(/\{problem\}/g, rand(words.problem));
+      s = s.replace(/\{alternative\}/g, rand(words.alternative));
+      s = s.replace(/\{situation\}/g, rand(words.situation));
+      s = s.replace(/\{mistake\}/g, rand(words.mistake));
+      s = s.replace(/\{quote\}/g, rand(words.quote));
+      s = s.replace(/\{outcome\}/g, rand(words.outcome));
+      s = s.replace(/\{pain\}/g, rand(words.pain));
+      s = s.replace(/\{result\}/g, rand(words.result));
+      // Replace any remaining {word} with the placeholder name (fallback)
+      s = s.replace(/\{(\w+)\}/g, (m, k) => "[" + k + "]");
       return s;
     }
 
     function generate(topic) {
-      const keys = Object.keys(templates);
+      const types = Object.keys(templates);
       const out = [];
-      keys.forEach(k => {
+      types.forEach(k => {
         const [t1, t2] = rand(templates[k]);
-        let line = fill(t1, placeholders);
+        let line = fill(t1);
         let sub = null;
-        if (t2) sub = fill(t2, placeholders);
-        if (topic) line = line.replace(/^(.*?)([.,])/, `$1 about <strong>${escapeHtml(topic)}</strong>$2`);
+        if (t2) sub = fill(t2);
+        if (topic) line = line.replace(/^([^.,!?]+)([.,!?])/, "<strong>" + escapeHtml(topic) + "</strong>$2");
         out.push({ type: k, line, sub });
       });
       return out;
@@ -115,58 +159,49 @@
       return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    document.getElementById("go").addEventListener("click", () => {
-      const topic = document.getElementById("input").value.trim();
-      const hooks = generate(topic);
-      const out = document.getElementById("output");
-      out.innerHTML = hooks.map(h => `
-        <div class="hook">
-          <span class="tag">${h.type}</span>
-          <p class="line">${h.line}${h.sub ? '<br><span class="sub">' + h.sub + '</span>' : ''}</p>
-          <button class="copy" data-line="${h.line.replace(/<[^>]*>/g, '')}">Copy</button>
-        </div>
-      `).join("");
-      document.querySelectorAll(".copy").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-          const txt = e.target.dataset.line;
-          navigator.clipboard.writeText(txt);
-          e.target.textContent = "Copied!";
-          setTimeout(() => e.target.textContent = "Copy", 1200);
-        });
-      });
-    });
+    // --- UI ---
+    const btn = document.getElementById("go");
+    const input = document.getElementById("input");
+    const output = document.getElementById("output");
 
-    // Quick seed so the page isn't empty
-    document.getElementById("input").value = "grow a LinkedIn audience";
+    input.value = "grow a LinkedIn audience";
+
+    btn.addEventListener("click", () => {
+      const topic = input.value.trim();
+      if (!topic) {
+        output.innerHTML = '<p class="error">Please enter a topic first.</p>';
+        return;
+      }
+      btn.disabled = true;
+      output.innerHTML = '<p class="loading">Generating hooks...</p>';
+
+      // Simulate tiny async delay for UX (all client-side, instant)
+      setTimeout(() => {
+        const hooks = generate(topic);
+        output.innerHTML = hooks.map(h => `
+          <div class="hook">
+            <span class="tag">${h.type}</span>
+            <p class="line">${h.line}${h.sub ? '<br><span class="sub">' + escapeHtml(h.sub) + '</span>' : ''}</p>
+            <button class="copy" data-text="${escapeHtml(h.line.replace(/<[^>]*>/g, ''))}">Copy</button>
+          </div>
+        `).join("");
+
+        // Wire copy buttons
+        document.querySelectorAll(".copy").forEach(b => {
+          b.addEventListener("click", (e) => {
+            const txt = e.target.dataset.text;
+            navigator.clipboard.writeText(txt).then(() => {
+              e.target.textContent = "Copied!";
+              setTimeout(() => e.target.textContent = "Copy", 1200);
+            }).catch(() => {
+              e.target.textContent = "Copy";
+            });
+          });
+        });
+
+        btn.disabled = false;
+      }, 300);
+    });
   </script>
-  <style>
-    :root {
-      --bg: #0a0a0f;
-      --card: #1a1a24;
-      --border: #2a2a3a;
-      --text: #e8e8f0;
-      --muted: #8a8aa3;
-      --accent: #6366f1;
-      --accent2: #8b5cf6;
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; max-width: 560px; width: 100%; }
-    h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: .25rem; }
-    .subtitle { color: var(--muted); font-size: .9rem; margin-bottom: 1.25rem; }
-    textarea { width: 100%; background: #111; border: 1px solid var(--border); border-radius: 10px; padding: .75rem; font-size: .95rem; resize: vertical; color: var(--text); outline: none; transition: border .2s; }
-    textarea:focus { border-color: var(--accent); }
-    button#go { width: 100%; margin-top: 1rem; padding: .8rem; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 1rem; transition: opacity .2s; }
-    button#go:hover { opacity: .9; }
-    .hook { background: #111; border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-top: 1rem; position: relative; }
-    .hook:last-child { margin-bottom: 2rem; }
-    .tag { display: inline-block; font-size: .65rem; text-transform: uppercase; letter-spacing: .5px; font-weight: 700; color: var(--accent); background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3); border-radius: 6px; padding: .15rem .5rem; margin-bottom: .5rem; }
-    .line { font-size: 1rem; line-height: 1.5; }
-    .sub { color: var(--muted); font-size: .85rem; }
-    button.copy { position: absolute; top: 1rem; right: 1rem; background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: .25rem .6rem; font-size: .75rem; color: var(--muted); cursor: pointer; transition: all .2s; }
-    button.copy:hover { background: var(--accent); color: #000; }
-    footer { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 1.5rem; }
-    footer a { color: var(--accent); }
-  </style>
 </body>
 </html>
